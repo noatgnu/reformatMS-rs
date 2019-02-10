@@ -1,0 +1,28 @@
+name: ReformatMS
+Version: "0.1.0"
+author: Toan K. Phung <toan.phung@uq.net.au>
+about: Reformat SWATH-MS output into a long form format with FDR filtering compatible to MSstats
+args:
+  - ion:
+      short: i
+      long: ion
+      help: Providing ion input file
+  - fdr:
+      short: f
+      long: fdr
+      help: Providing FDR input file
+  - out:
+      short: o
+      long: out
+      help: Providing output filename and path
+  - threshold:
+      short: t
+      long: threshold
+      help: Providing FDR threshold cutoff
+      default_value: "0.01"
+      takes_value: true
+  - ignore:
+      short: e
+      long: ignore
+      help: Ignore Blank Rows
+      default_value: "true"

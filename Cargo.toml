@@ -1,0 +1,9 @@
+[package]
+name = "reformatMS-rs"
+version = "0.1.0"
+authors = ["Toan Phung <toan.phung@uqconnect.edu.au>"]
+edition = "2018"
+
+[dependencies]
+clap = {version = "2.32.0", features = ["yaml"]}
+text_io = {version = "0.1.7"}
