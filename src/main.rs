@@ -17,8 +17,10 @@ fn main() {
     }
     let params = common::exp_summary(&params_map);
     let ion_file = csv::read_csv(&params.ion);
+    let mut split_buffer: Vec<&str> = vec![];
     for line in ion_file {
-        println!("{}", line)
+        split_buffer = line.split(",").collect();
+        println!("{:?}", &split_buffer)
     }
 }
 
