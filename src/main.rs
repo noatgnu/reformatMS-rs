@@ -2,8 +2,10 @@
 #[macro_use] extern crate text_io;
 use std::collections::HashMap;
 use clap::{App};
+use std::io::{BufRead, BufReader};
 mod common;
 mod csv;
+
 
 fn main() {
 
@@ -17,10 +19,11 @@ fn main() {
     }
     let params = common::exp_summary(&params_map);
     let ion_file = csv::read_csv(&params.ion);
-    let mut split_buffer: Vec<&str> = vec![];
+    println!("{}", &ion_file.header);
+    let header: String;
     for line in ion_file {
-        split_buffer = line.split(",").collect();
-        println!("{:?}", &split_buffer)
+       let buffer: Vec<&str> = line.split(",").collect();
+       //println!("{:?}", buffer.len());
     }
 }
 
