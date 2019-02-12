@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 clap = {version = "2.32.0", features = ["yaml"]}
 text_io = {version = "0.1.7"}
+regex = "1"
