@@ -10,16 +10,6 @@ pub struct CSVFile {
     pub header: String,
 }
 
-impl CSVFile {
-    pub fn get_header(&mut self) {
-        let line = match self.reader.read_until(b'\n', &mut self.buffer) {
-            Err(error) => panic!("Can't read: {}", error),
-            Ok(_) => Some(str::from_utf8(&self.buffer).unwrap().to_string()),
-        };
-        self.header = line.unwrap();
-    }
-}
-
 impl Iterator for CSVFile {
     type Item = String;
     fn next(&mut self) -> Option<String> {

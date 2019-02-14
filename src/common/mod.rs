@@ -5,8 +5,8 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::str;
 use std::fs::File;
-use crate::csv::read_csv;
-
+use crate::csv;
+use regex::{Regex, Match};
 
 pub struct InputParam {
     pub name: String,
@@ -19,6 +19,12 @@ pub struct ExpParams {
     pub out: String,
     pub threshold: f32,
     pub ignore: bool
+}
+#[derive(Debug)]
+pub struct Sample {
+    condition: String,
+    bio_replicate: String,
+    run: String,
 }
 
 pub fn get_input(args: &ArgMatches, params: &InputParam) -> String {
@@ -82,8 +88,25 @@ pub fn read_file(file_path: &PathBuf) -> BufReader<File> {
 }
 
 pub fn read_csv_file(params: &ExpParams) {
-    let ion_file = read_csv(&params.ion);
+    let ion_file = csv::read_csv(&params.ion);
+    let pattern = Regex::new(r"(.+)_\d+$").unwrap();
+    let columns: Vec<&str> = ion_file.header.split(",").collect();
+    let mut samples_map = HashMap::new();
+    for column in 9..columns.len() {
+        let mut c: &str = columns.get(column).unwrap();
+        c = c.trim_right();
+//        let res: Match = pattern.find(c).unwrap();
+        let res = pattern.captures(c);
+        if let Some(result) = res {
+            samples_map.insert(c.to_string(), Sample{
+                condition: result[1].to_string(),
+                bio_replicate: c.to_string(),
+                run: (column - 8).to_string()
+            });
+        }
+    }
+    println!("{:?}", &samples_map);
     for line in ion_file {
-        println!("{}", line)
+        let buffer: Vec<&str> = line.split(",").collect();
     }
 }

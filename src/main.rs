@@ -22,18 +22,6 @@ fn main() {
         params_map.insert(p.name.clone(),  common::get_input(&args, &p));
     }
     let params = common::exp_summary(&params_map);
-    let ion_file = csv::read_csv(&params.ion);
-    let pattern = Regex::new(r"\d+$").unwrap();
-    let columns: Vec<&str> = ion_file.header.split(",").collect();
-    for column in 9..columns.len() {
-        let mut c: &str = columns.get(column).unwrap();
-        c = c.trim_right();
-        let res: Match = pattern.find(c).unwrap();
-        println!("{}", res.as_str())
-    }
-    for line in ion_file {
-       let buffer: Vec<&str> = line.split(",").collect();
-       //println!("{:?}", buffer.len());
-    }
+    common::read_csv_file(&params);
 }
 
