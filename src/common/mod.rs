@@ -7,6 +7,7 @@ use std::str;
 use std::fs::File;
 use crate::csv;
 use regex::{Regex, Match};
+use std::collections::HashSet;
 
 pub struct InputParam {
     pub name: String,
@@ -20,11 +21,17 @@ pub struct ExpParams {
     pub threshold: f32,
     pub ignore: bool
 }
+
 #[derive(Debug)]
 pub struct Sample {
     condition: String,
     bio_replicate: String,
     run: String,
+    fdr_map: HashMap<String, FDRValue>
+}
+
+pub struct FDRValue {
+    pub value: f32
 }
 
 pub fn get_input(args: &ArgMatches, params: &InputParam) -> String {
@@ -88,25 +95,35 @@ pub fn read_file(file_path: &PathBuf) -> BufReader<File> {
 }
 
 pub fn read_csv_file(params: &ExpParams) {
-    let ion_file = csv::read_csv(&params.ion);
+    let fdr_file = csv::read_csv(&params.fdr);
     let pattern = Regex::new(r"(.+)_\d+$").unwrap();
-    let columns: Vec<&str> = ion_file.header.split(",").collect();
+    let columns: Vec<&str> = fdr_file.header.split(",").collect();
+    let max_col_number = columns.len();
     let mut samples_map = HashMap::new();
-    for column in 9..columns.len() {
-        let mut c: &str = columns.get(column).unwrap();
+    for column in 9..max_col_number {
+        let mut c: &str = &columns.get(column).unwrap();
         c = c.trim_right();
 //        let res: Match = pattern.find(c).unwrap();
         let res = pattern.captures(c);
+        let mut fdr_map = HashMap::new();
         if let Some(result) = res {
-            samples_map.insert(c.to_string(), Sample{
+            samples_map.insert(column, Sample{
                 condition: result[1].to_string(),
                 bio_replicate: c.to_string(),
-                run: (column - 8).to_string()
+                run: (column - 8).to_string(),
+                fdr_map
             });
         }
     }
     println!("{:?}", &samples_map);
-    for line in ion_file {
-        let buffer: Vec<&str> = line.split(",").collect();
+    for line in fdr_file {
+        let splitted_values: Vec<&str> = line.split(",").collect();
+        for column in 9..max_col_number {
+            let mut c: &str = &splitted_values.get(column).unwrap();
+            c = c.trim_right();
+            let fdr_value = c.parse::<f32>().unwrap();
+            let k = format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[4]);
+            samples_map.get_mut(&column).unwrap().fdr_map.insert(k, FDRValue{ value: fdr_value });
+        }
     }
 }
