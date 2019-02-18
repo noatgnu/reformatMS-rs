@@ -30,8 +30,15 @@ pub struct Sample {
     fdr_map: HashMap<String, FDRValue>
 }
 
+#[derive(Debug)]
 pub struct FDRValue {
     pub value: f32
+}
+
+#[derive(Debug)]
+pub struct Series {
+    pub sample_array: Vec<Sample>,
+    pub sample_number: int,
 }
 
 pub fn get_input(args: &ArgMatches, params: &InputParam) -> String {
@@ -94,7 +101,7 @@ pub fn read_file(file_path: &PathBuf) -> BufReader<File> {
     return BufReader::new(file);
 }
 
-pub fn read_csv_file(params: &ExpParams) {
+pub fn read_fdr_file(params: &ExpParams) {
     let fdr_file = csv::read_csv(&params.fdr);
     let pattern = Regex::new(r"(.+)_\d+$").unwrap();
     let columns: Vec<&str> = fdr_file.header.split(",").collect();
@@ -115,7 +122,7 @@ pub fn read_csv_file(params: &ExpParams) {
             });
         }
     }
-    println!("{:?}", &samples_map);
+
     for line in fdr_file {
         let splitted_values: Vec<&str> = line.split(",").collect();
         for column in 9..max_col_number {
@@ -126,4 +133,40 @@ pub fn read_csv_file(params: &ExpParams) {
             samples_map.get_mut(&column).unwrap().fdr_map.insert(k, FDRValue{ value: fdr_value });
         }
     }
+    println!("{:?}", &samples_map);
+}
+
+pub fn read_ions_file(params: &ExpParams) {
+    let ions_file = csv::read_csv(&params.ion);
+    let pattern = Regex::new(r"(.+)_\d+$").unwrap();
+    let columns: Vec<&str> = fdr_file.header.split(",").collect();
+    let max_col_number = columns.len();
+    let mut samples_map = HashMap::new();
+    for column in 9..max_col_number {
+        let mut c: &str = &columns.get(column).unwrap();
+        c = c.trim_right();
+//        let res: Match = pattern.find(c).unwrap();
+        let res = pattern.captures(c);
+        let mut fdr_map = HashMap::new();
+        if let Some(result) = res {
+            samples_map.insert(column, Sample{
+                condition: result[1].to_string(),
+                bio_replicate: c.to_string(),
+                run: (column - 8).to_string(),
+                fdr_map
+            });
+        }
+    }
+
+    for line in fdr_file {
+        let splitted_values: Vec<&str> = line.split(",").collect();
+        for column in 9..max_col_number {
+            let mut c: &str = &splitted_values.get(column).unwrap();
+            c = c.trim_right();
+            let fdr_value = c.parse::<f32>().unwrap();
+            let k = format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[4]);
+            samples_map.get_mut(&column).unwrap().fdr_map.insert(k, FDRValue{ value: fdr_value });
+        }
+    }
+    println!("{:?}", &samples_map);
 }

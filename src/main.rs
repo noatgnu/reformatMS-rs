@@ -22,6 +22,6 @@ fn main() {
         params_map.insert(p.name.clone(),  common::get_input(&args, &p));
     }
     let params = common::exp_summary(&params_map);
-    common::read_csv_file(&params);
+    common::read_fdr_file(&params);
 }
 
