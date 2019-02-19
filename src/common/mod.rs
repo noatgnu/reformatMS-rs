@@ -36,7 +36,8 @@ pub struct FDRValue {
 }
 
 #[derive(Debug)]
-pub struct Series {
+pub struct Series <'a> {
+    pub sample_map: HashMap<usize, &'a Sample>,
     pub sample_array: Vec<Sample>,
     pub sample_number: int,
 }
