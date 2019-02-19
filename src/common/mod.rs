@@ -161,9 +161,28 @@ pub fn read_ions_file(params: &ExpParams) {
 
     for line in fdr_file {
         let splitted_values: Vec<&str> = line.split(",").collect();
+        let sample_series: Series = Series {
+            sample_map: HashMap::new(),
+            sample_array: vec![],
+            sample_number: 0
+        };
+
         for column in 9..max_col_number {
             let mut c: &str = &splitted_values.get(column).unwrap();
             c = c.trim_right();
+            if c != "" {
+                let fdr_value = match c.parse::<f32>() {
+                    Ok(result) => {result},
+                    Err(err) => {println!("{:?}", err)},
+                };
+                if fdr_value < params.threshold {
+                    let series_sample =
+
+                    sample_series.sample_number += 1;
+                }
+            }
+
+
             let fdr_value = c.parse::<f32>().unwrap();
             let k = format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[4]);
             samples_map.get_mut(&column).unwrap().fdr_map.insert(k, FDRValue{ value: fdr_value });
