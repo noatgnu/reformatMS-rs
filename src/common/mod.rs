@@ -107,7 +107,6 @@ pub fn read_fdr_file(params: &ExpParams) {
     let pattern = Regex::new(r"(.+)_\d+$").unwrap();
     let columns: Vec<&str> = fdr_file.header.split(",").collect();
     let max_col_number = columns.len();
-    let sample_number = (max_col_number - 9) as u32;
     let mut samples_map = HashMap::new();
     let mut peptide_map = HashMap::new();
     for column in 9..max_col_number {
@@ -126,7 +125,7 @@ pub fn read_fdr_file(params: &ExpParams) {
         }
     }
 
-    for line in fdr_file {
+    for (index, line) in fdr_file.enumerate() {
         let splitted_values: Vec<&str> = line.split(",").collect();
         let mut sample_series: Series = Series {
             sample_array: vec![],
@@ -166,7 +165,7 @@ pub fn read_fdr_file(params: &ExpParams) {
                         let k = format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[4]);
                         samples_map.get_mut(&column).unwrap().fdr_map.insert(k, FDRValue{ value: fdr_value });*/
         }
-        if sample_series.sample_pass == sample_number {
+        if sample_series.sample_pass > 0 {
             peptide_map.insert(format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[4]), sample_series);
         }
     }
@@ -181,11 +180,17 @@ pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>) {
     let sample_number = max_col_number - 9;
     let out_file = match File::create(params.out) {
         Ok(fi) => {fi},
-        Err(err) => panic!("Error: {}", error),
+        Err(err) => panic!("Error: {}", err),
     };
     let mut writer = BufWriter::new(out_file);
-    for line in ions_file.enumerate() {
+    for line in ions_file {
         let splitted_values: Vec<&str> = line.split(",").collect();
+        let k = format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[3]);
+        let series = match fdr_map.get(&k) {
+            None => {Series{ sample_array: vec![], sample_pass: 0 }},
+            Some(res) => {res},
+        };
+
     }
 
 }
