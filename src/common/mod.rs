@@ -8,6 +8,7 @@ use std::fs::File;
 use crate::csv;
 use regex::{Regex, Match};
 use std::io::BufWriter;
+use std::io::Write;
 
 pub struct InputParam {
     pub name: String,
@@ -26,14 +27,14 @@ pub struct ExpParams {
 pub struct Sample {
     condition: String,
     bio_replicate: String,
-    run: String,
-    fdr_map: HashMap<String, FDRValue>
+    run: u32,
 }
 
 #[derive(Debug)]
 pub struct FDRValue {
     pub value: f32,
     pub blank: bool,
+    pub pass: bool,
 }
 
 #[derive(Debug)]
@@ -107,20 +108,18 @@ pub fn read_fdr_file(params: &ExpParams) {
     let pattern = Regex::new(r"(.+)_\d+$").unwrap();
     let columns: Vec<&str> = fdr_file.header.split(",").collect();
     let max_col_number = columns.len();
-    let mut samples_map = HashMap::new();
+    let mut samples = vec![];
     let mut peptide_map = HashMap::new();
     for column in 9..max_col_number {
         let mut c: &str = &columns.get(column).unwrap();
         c = c.trim_right();
 //        let res: Match = pattern.find(c).unwrap();
         let res = pattern.captures(c);
-        let mut fdr_map = HashMap::new();
         if let Some(result) = res {
-            samples_map.insert(column, Sample{
+            samples.push(Sample{
                 condition: result[1].to_string(),
                 bio_replicate: c.to_string(),
-                run: (column - 8).to_string(),
-                fdr_map
+                run: (column - 8) as u32,
             });
         }
     }
@@ -139,17 +138,19 @@ pub fn read_fdr_file(params: &ExpParams) {
                 let fdr_value = match c.parse::<f32>() {
                     Ok(res) => {FDRValue{
                         value: res,
-                        blank: false
+                        blank: false,
+                        pass: res < params.threshold,
                     }},
                     Err(_) => {
                         println!("Error parsing value at row {}, column {}", index, column);
                         FDRValue {
                             value: 0.0,
-                            blank: true
+                            blank: true,
+                            pass: false,
                         }
                     },
                 };
-                if !fdr_value.blank && fdr_value.value < params.threshold {
+                if !fdr_value.blank && fdr_value.pass {
                     sample_series.sample_pass += 1;
                 }
                 sample_series.sample_array.push(fdr_value);
@@ -158,7 +159,8 @@ pub fn read_fdr_file(params: &ExpParams) {
                 println!("Error parsing value at row {}, column {}", index, column);
                 sample_series.sample_array.push(FDRValue {
                     value: 0.0,
-                    blank: true
+                    blank: true,
+                    pass: false,
                 });
             }
             /*            let fdr_value = c.parse::<f32>().unwrap();
@@ -169,28 +171,65 @@ pub fn read_fdr_file(params: &ExpParams) {
             peptide_map.insert(format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[4]), sample_series);
         }
     }
-    println!("{:?}", &samples_map);
+    println!("{:?}", &samples);
 }
 
-pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>) {
+pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>, samples: Vec<Sample>) {
     let ions_file = csv::read_csv(&params.ion);
     let pattern = Regex::new(r"(.+)_\d+$").unwrap();
     let columns: Vec<&str> = ions_file.header.split(",").collect();
     let max_col_number = columns.len();
     let sample_number = max_col_number - 9;
-    let out_file = match File::create(params.out) {
+    let out_file = match File::create(&params.out) {
         Ok(fi) => {fi},
         Err(err) => panic!("Error: {}", err),
     };
     let mut writer = BufWriter::new(out_file);
+    match write!(writer, "ProteinName,PeptideSequence,PrecursorCharge,FragmentIon,ProductCharge,IsotopeLabelType,Condition,BioReplicate,Run,Intensity") {
+        Ok(_) => {},
+        Err(err) => println!("Error writing to file: {}", err),
+    };
     for line in ions_file {
         let splitted_values: Vec<&str> = line.split(",").collect();
         let k = format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[3]);
-        let series = match fdr_map.get(&k) {
-            None => {Series{ sample_array: vec![], sample_pass: 0 }},
-            Some(res) => {res},
-        };
+        if fdr_map.contains_key(&k) {
+            let series = fdr_map.get(&k).unwrap();
+            if series.sample_pass > 0 {
+                for (index, sample) in samples.iter().enumerate() {
+                    if series.sample_array[index].pass {
+                        match write!(writer,
+                               "{},{},{},{},{},{},L,{},{},{}",
+                               splitted_values[0],
+                               splitted_values[1],
+                               splitted_values[3],
+                               format!("{}{}", splitted_values[7], splitted_values[8]),
+                               splitted_values[6],
+                               sample.condition,
+                               sample.bio_replicate,
+                               sample.run,
+                               splitted_values[(sample.run+8) as usize]) {
+                            Ok(_) => {},
+                            Err(err) => println!("Error writing to file: {}", err),
+                        };
+                    } else {
+                        match write!(writer,
+                               "{},{},{},{},{},{},L,{},{},",
+                               splitted_values[0],
+                               splitted_values[1],
+                               splitted_values[3],
+                               format!("{}{}", splitted_values[7], splitted_values[8]),
+                               splitted_values[6],
+                               sample.condition,
+                               sample.bio_replicate,
+                               sample.run) {
+                            Ok(_) => {},
+                            Err(err) => println!("Error writing to file: {}", err),
+                        };
+                    }
 
+                }
+            }
+        }
     }
-
+    drop(writer);
 }
