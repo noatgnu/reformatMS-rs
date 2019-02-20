@@ -7,6 +7,7 @@ use std::str;
 use std::fs::File;
 use crate::csv;
 use regex::{Regex, Match};
+use std::io::BufWriter;
 
 pub struct InputParam {
     pub name: String,
@@ -125,7 +126,7 @@ pub fn read_fdr_file(params: &ExpParams) {
         }
     }
 
-    for (index, line) in fdr_file.enumerate() {
+    for line in fdr_file {
         let splitted_values: Vec<&str> = line.split(",").collect();
         let mut sample_series: Series = Series {
             sample_array: vec![],
@@ -172,19 +173,19 @@ pub fn read_fdr_file(params: &ExpParams) {
     println!("{:?}", &samples_map);
 }
 
-pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<usize, Series>) {
+pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>) {
     let ions_file = csv::read_csv(&params.ion);
     let pattern = Regex::new(r"(.+)_\d+$").unwrap();
     let columns: Vec<&str> = ions_file.header.split(",").collect();
     let max_col_number = columns.len();
     let sample_number = max_col_number - 9;
-
-    for (index, line) in ions_file.enumerate() {
+    let out_file = match File::create(params.out) {
+        Ok(fi) => {fi},
+        Err(err) => panic!("Error: {}", error),
+    };
+    let mut writer = BufWriter::new(out_file);
+    for line in ions_file.enumerate() {
         let splitted_values: Vec<&str> = line.split(",").collect();
-        let mut sample_series: Series = Series {
-            sample_array: vec![],
-            sample_pass: 0
-        };
     }
 
 }
