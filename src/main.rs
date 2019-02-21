@@ -22,6 +22,7 @@ fn main() {
         params_map.insert(p.name.clone(),  common::get_input(&args, &p));
     }
     let params = common::exp_summary(&params_map);
-    common::read_fdr_file(&params);
+    let (samples, fdr_map) = common::read_fdr_file(&params);
+    common::read_ions_file(&params, fdr_map, samples);
 }
 

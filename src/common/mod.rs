@@ -103,14 +103,14 @@ pub fn read_file(file_path: &PathBuf) -> BufReader<File> {
     return BufReader::new(file);
 }
 
-pub fn read_fdr_file(params: &ExpParams) {
+pub fn read_fdr_file(params: &ExpParams) -> (Vec<Sample>, HashMap<String, Series>) {
     let fdr_file = csv::read_csv(&params.fdr);
     let pattern = Regex::new(r"(.+)_\d+$").unwrap();
     let columns: Vec<&str> = fdr_file.header.split(",").collect();
     let max_col_number = columns.len();
     let mut samples = vec![];
     let mut peptide_map = HashMap::new();
-    for column in 9..max_col_number {
+    for column in 7..max_col_number {
         let mut c: &str = &columns.get(column).unwrap();
         c = c.trim_right();
 //        let res: Match = pattern.find(c).unwrap();
@@ -119,11 +119,11 @@ pub fn read_fdr_file(params: &ExpParams) {
             samples.push(Sample{
                 condition: result[1].to_string(),
                 bio_replicate: c.to_string(),
-                run: (column - 8) as u32,
+                run: (column - 6) as u32,
             });
         }
     }
-
+    println!("Samples: {:?}", samples);
     for (index, line) in fdr_file.enumerate() {
         let splitted_values: Vec<&str> = line.split(",").collect();
         let mut sample_series: Series = Series {
@@ -131,7 +131,7 @@ pub fn read_fdr_file(params: &ExpParams) {
             sample_pass: 0
         };
 
-        for column in 9..max_col_number {
+        for column in 7..max_col_number {
             let mut c: &str = &splitted_values.get(column).unwrap();
             c = c.trim_right();
             if c != "" {
@@ -171,7 +171,7 @@ pub fn read_fdr_file(params: &ExpParams) {
             peptide_map.insert(format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[4]), sample_series);
         }
     }
-    println!("{:?}", &samples);
+    return (samples, peptide_map);
 }
 
 pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>, samples: Vec<Sample>) {
@@ -185,51 +185,54 @@ pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>, samp
         Err(err) => panic!("Error: {}", err),
     };
     let mut writer = BufWriter::new(out_file);
-    match write!(writer, "ProteinName,PeptideSequence,PrecursorCharge,FragmentIon,ProductCharge,IsotopeLabelType,Condition,BioReplicate,Run,Intensity") {
+    match write!(writer, "ProteinName,PeptideSequence,PrecursorCharge,FragmentIon,ProductCharge,IsotopeLabelType,Condition,BioReplicate,Run,Intensity\n") {
         Ok(_) => {},
         Err(err) => println!("Error writing to file: {}", err),
     };
+    let mut line_buffer= vec![];
     for line in ions_file {
         let splitted_values: Vec<&str> = line.split(",").collect();
         let k = format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[3]);
         if fdr_map.contains_key(&k) {
             let series = fdr_map.get(&k).unwrap();
+            let mut pass = false;
             if series.sample_pass > 0 {
                 for (index, sample) in samples.iter().enumerate() {
                     if series.sample_array[index].pass {
-                        match write!(writer,
-                               "{},{},{},{},{},{},L,{},{},{}",
-                               splitted_values[0],
-                               splitted_values[1],
-                               splitted_values[3],
-                               format!("{}{}", splitted_values[7], splitted_values[8]),
-                               splitted_values[6],
-                               sample.condition,
-                               sample.bio_replicate,
-                               sample.run,
-                               splitted_values[(sample.run+8) as usize]) {
-                            Ok(_) => {},
-                            Err(err) => println!("Error writing to file: {}", err),
-                        };
+                        let value = splitted_values[(sample.run+8) as usize].trim_right();
+                        if value != "" {
+                            pass = true;
+                        }
+                        line_buffer.push(format!("{},{},{},{}{},L,{},{},{},{},{}\n",
+                                                splitted_values[0],
+                                                splitted_values[1],
+                                                splitted_values[3],
+                                                splitted_values[7],
+                                                splitted_values[8],
+                                                splitted_values[6],
+                                                sample.condition,
+                                                sample.bio_replicate,
+                                                sample.run,
+                                                value));
                     } else {
-                        match write!(writer,
-                               "{},{},{},{},{},{},L,{},{},",
-                               splitted_values[0],
-                               splitted_values[1],
-                               splitted_values[3],
-                               format!("{}{}", splitted_values[7], splitted_values[8]),
-                               splitted_values[6],
-                               sample.condition,
-                               sample.bio_replicate,
-                               sample.run) {
-                            Ok(_) => {},
-                            Err(err) => println!("Error writing to file: {}", err),
-                        };
+                        line_buffer.push(format!("{},{},{},{}{},L,{},{},{},{},\n",
+                                                splitted_values[0],
+                                                splitted_values[1],
+                                                splitted_values[3],
+                                                splitted_values[7],
+                                                splitted_values[8],
+                                                splitted_values[6],
+                                                sample.condition,
+                                                sample.bio_replicate,
+                                                sample.run));
                     }
-
                 }
             }
+            if pass {
+                println!("{}", &s);
+                write!(writer, "{}", line_buffer.join("")).unwrap();
+            }
+            line_buffer.clear();
         }
     }
-    drop(writer);
 }
