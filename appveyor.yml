@@ -48,8 +48,8 @@ test_script:
       cargo build --target %TARGET% --release &&
       cargo test --target %TARGET% &&
       cargo test --target %TARGET% --release &&
-      cargo run --target %TARGET% -- -i Ions.csv -f FDR.csv -o out.csv &&
-      cargo run --target %TARGET% --release -- -i Ions.csv -f FDR.csv -o out.csv
+      cargo run --target %TARGET% -- -i Ions.csv -f FDR.csv -o out.csv -te true &&
+      cargo run --target %TARGET% --release -- -i Ions.csv -f FDR.csv -o out.csv -te true
     )
 
 before_deploy:
