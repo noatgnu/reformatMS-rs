@@ -7,14 +7,17 @@ args:
       short: i
       long: ion
       help: Providing ion input file
+      takes_value: true
   - fdr:
       short: f
       long: fdr
       help: Providing FDR input file
+      takes_value: true
   - out:
       short: o
       long: out
       help: Providing output filename and path
+      takes_value: true
   - threshold:
       short: t
       long: threshold

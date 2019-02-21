@@ -229,7 +229,6 @@ pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>, samp
                 }
             }
             if pass {
-                println!("{}", &s);
                 write!(writer, "{}", line_buffer.join("")).unwrap();
             }
             line_buffer.clear();
