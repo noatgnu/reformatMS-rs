@@ -30,3 +30,9 @@ args:
       help: Ignore Blank Rows
       default_value: "true"
       takes_value: true
+  - test:
+      short: s
+      long: test
+      help: Enable Test Mode
+      default_value: "false"
+      takes_value: true

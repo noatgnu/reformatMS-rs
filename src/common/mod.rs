@@ -20,7 +20,8 @@ pub struct ExpParams {
     pub fdr: PathBuf,
     pub out: String,
     pub threshold: f32,
-    pub ignore: bool
+    pub ignore: bool,
+    pub test: bool
 }
 
 #[derive(Debug)]
@@ -60,7 +61,8 @@ pub fn exp_summary(params_map: &HashMap<String, String>) -> ExpParams {
         fdr: fs::canonicalize(&params_map["fdr"]).unwrap(),
         out: params_map["out"].clone(),
         threshold: params_map["threshold"].parse().unwrap(),
-        ignore: params_map["ignore"].parse().unwrap()
+        ignore: params_map["ignore"].parse().unwrap(),
+        test: params_map["test"].parse().unwrap()
     };
     /*println!("Ion file: {}\nFDR file: {}\nOutput File: {}\nFDR Threshold: {}\nIgnore Blank Rows: {}",
              &params_map["ion"], &params_map["fdr"], &params_map["out"], &params_map["threshold"], &params_map["ignore"]);*/
@@ -90,6 +92,10 @@ pub fn input_generate() -> Vec<InputParam> {
         InputParam {
             name: String::from("ignore"),
             question: String::from("Ignore blank rows"),
+        },
+        InputParam {
+            name: String::from("test"),
+            question: String::from("Disable write out"),
         }
     ];
     params_array
@@ -180,58 +186,61 @@ pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>, samp
     let columns: Vec<&str> = ions_file.header.split(",").collect();
     let max_col_number = columns.len();
     let sample_number = max_col_number - 9;
-    let out_file = match File::create(&params.out) {
-        Ok(fi) => {fi},
-        Err(err) => panic!("Error: {}", err),
-    };
-    let mut writer = BufWriter::new(out_file);
-    match write!(writer, "ProteinName,PeptideSequence,PrecursorCharge,FragmentIon,ProductCharge,IsotopeLabelType,Condition,BioReplicate,Run,Intensity\n") {
-        Ok(_) => {},
-        Err(err) => println!("Error writing to file: {}", err),
-    };
-    let mut line_buffer= vec![];
-    for line in ions_file {
-        let splitted_values: Vec<&str> = line.split(",").collect();
-        let k = format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[3]);
-        if fdr_map.contains_key(&k) {
-            let series = fdr_map.get(&k).unwrap();
-            let mut pass = false;
-            if series.sample_pass > 0 {
-                for (index, sample) in samples.iter().enumerate() {
-                    if series.sample_array[index].pass {
-                        let value = splitted_values[(sample.run+8) as usize].trim_right();
-                        if value != "" {
-                            pass = true;
+    if !params.test {
+        let out_file = match File::create(&params.out) {
+            Ok(fi) => {fi},
+            Err(err) => panic!("Error: {}", err),
+        };
+
+        let mut writer = BufWriter::new(out_file);
+        match write!(writer, "ProteinName,PeptideSequence,PrecursorCharge,FragmentIon,ProductCharge,IsotopeLabelType,Condition,BioReplicate,Run,Intensity\n") {
+            Ok(_) => {},
+            Err(err) => println!("Error writing to file: {}", err),
+        };
+        let mut line_buffer= vec![];
+        for line in ions_file {
+            let splitted_values: Vec<&str> = line.split(",").collect();
+            let k = format!("{},{},{}", splitted_values[0], splitted_values[1], splitted_values[3]);
+            if fdr_map.contains_key(&k) {
+                let series = fdr_map.get(&k).unwrap();
+                let mut pass = false;
+                if series.sample_pass > 0 {
+                    for (index, sample) in samples.iter().enumerate() {
+                        if series.sample_array[index].pass {
+                            let value = splitted_values[(sample.run+8) as usize].trim_right();
+                            if value != "" {
+                                pass = true;
+                            }
+                            line_buffer.push(format!("{},{},{},{}{},L,{},{},{},{},{}\n",
+                                                     splitted_values[0],
+                                                     splitted_values[1],
+                                                     splitted_values[3],
+                                                     splitted_values[7],
+                                                     splitted_values[8],
+                                                     splitted_values[6],
+                                                     sample.condition,
+                                                     sample.bio_replicate,
+                                                     sample.run,
+                                                     value));
+                        } else {
+                            line_buffer.push(format!("{},{},{},{}{},L,{},{},{},{},\n",
+                                                     splitted_values[0],
+                                                     splitted_values[1],
+                                                     splitted_values[3],
+                                                     splitted_values[7],
+                                                     splitted_values[8],
+                                                     splitted_values[6],
+                                                     sample.condition,
+                                                     sample.bio_replicate,
+                                                     sample.run));
                         }
-                        line_buffer.push(format!("{},{},{},{}{},L,{},{},{},{},{}\n",
-                                                splitted_values[0],
-                                                splitted_values[1],
-                                                splitted_values[3],
-                                                splitted_values[7],
-                                                splitted_values[8],
-                                                splitted_values[6],
-                                                sample.condition,
-                                                sample.bio_replicate,
-                                                sample.run,
-                                                value));
-                    } else {
-                        line_buffer.push(format!("{},{},{},{}{},L,{},{},{},{},\n",
-                                                splitted_values[0],
-                                                splitted_values[1],
-                                                splitted_values[3],
-                                                splitted_values[7],
-                                                splitted_values[8],
-                                                splitted_values[6],
-                                                sample.condition,
-                                                sample.bio_replicate,
-                                                sample.run));
                     }
                 }
+                if pass {
+                    write!(writer, "{}", line_buffer.join("")).unwrap();
+                }
+                line_buffer.clear();
             }
-            if pass {
-                write!(writer, "{}", line_buffer.join("")).unwrap();
-            }
-            line_buffer.clear();
         }
     }
 }

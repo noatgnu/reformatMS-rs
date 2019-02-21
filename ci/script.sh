@@ -14,8 +14,8 @@ main() {
     cross test --target $TARGET
     cross test --target $TARGET --release
 
-    cross run --target $TARGET -- -i Ions.csv -f FDR.csv -o out.csv
-    cross run --target $TARGET --release -- -i Ions.csv -f FDR.csv -o out.csv
+    cross run --target $TARGET -- -i Ions.csv -f FDR.csv -o out.csv -s true
+    cross run --target $TARGET --release -- -i Ions.csv -f FDR.csv -o out.csv -s true
 }
 
 # we don't run the "test phase" when doing deploys
