@@ -29,3 +29,4 @@ args:
       long: ignore
       help: Ignore Blank Rows
       default_value: "true"
+      takes_value: true
