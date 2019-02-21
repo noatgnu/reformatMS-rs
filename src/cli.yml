@@ -3,34 +3,36 @@ Version: "0.1.0"
 author: Toan K. Phung <toan.phung@uq.net.au>
 about: Reformat SWATH-MS output into a long form format with FDR filtering compatible to MSstats
 args:
-    - ion:
-        short: i
-        long: ion
-        help: Providing ion input file
-        takes_value: true
-    - fdr:
-        short: f
-        long: fdr
-        help: Providing FDR input file
-        takes_value: true
-    - out:
-        short: o
-        long: out
-        help: Providing output filename and path
-        takes_value: true
-    - threshold:
-        short: t
-        long: threshold
-        help: Providing FDR threshold cutoff
-        default_value: "0.01"
-        takes_value: true
-    - ignore:
-        short: e
-        long: ignore
-        help: Ignore Blank Rows
-        default_value: "true"
-    - test:
-          short: te
-          long: test
-          help: Run Test
-          default_value: "false"
+  - ion:
+      short: i
+      long: ion
+      help: Providing ion input file
+      takes_value: true
+  - fdr:
+      short: f
+      long: fdr
+      help: Providing FDR input file
+      takes_value: true
+  - out:
+      short: o
+      long: out
+      help: Providing output filename and path
+      takes_value: true
+  - threshold:
+      short: t
+      long: threshold
+      help: Providing FDR threshold cutoff
+      default_value: "0.01"
+      takes_value: true
+  - ignore:
+      short: e
+      long: ignore
+      help: Ignore Blank Rows
+      default_value: "true"
+      takes_value: true
+  - test:
+      short: s
+      long: test
+      help: Enable Test Mode
+      default_value: "false"
+      takes_value: true
