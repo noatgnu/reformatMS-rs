@@ -75,15 +75,15 @@ pub fn input_generate() -> Vec<InputParam> {
     let params_array = vec![
         InputParam {
             name: String::from("ion"),
-            question: String::from("Ion file"),
+            question: String::from("What SWATH-MS file are you opening (written like: SWATH.csv): "),
         },
         InputParam {
             name: String::from("fdr"),
-            question: String::from("FDR file"),
+            question: String::from("What FDR file are you opening (written like: FDR.csv): "),
         },
         InputParam {
             name: String::from("out"),
-            question: String::from("Output file"),
+            question: String::from("What are your output file (written like: output.csv): "),
         },
         InputParam {
             name: String::from("threshold"),
