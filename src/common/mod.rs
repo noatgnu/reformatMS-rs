@@ -211,7 +211,7 @@ pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>, samp
                             if value != "" {
                                 pass = true;
                             }
-                            line_buffer.push(format!("{},{},{},{}{},L,{},{},{},{},{}\n",
+                            line_buffer.push(format!("{},{},{},{}{},{},L,{},{},{},{}\n",
                                                      splitted_values[0],
                                                      splitted_values[1],
                                                      splitted_values[3],
@@ -223,7 +223,7 @@ pub fn read_ions_file(params: &ExpParams, fdr_map: HashMap<String, Series>, samp
                                                      sample.run,
                                                      value));
                         } else {
-                            line_buffer.push(format!("{},{},{},{}{},L,{},{},{},{},\n",
+                            line_buffer.push(format!("{},{},{},{}{},{},L,{},{},{},\n",
                                                      splitted_values[0],
                                                      splitted_values[1],
                                                      splitted_values[3],
